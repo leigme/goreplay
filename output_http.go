@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -27,6 +28,12 @@ type response struct {
 	uuid          []byte
 	roundTripTime int64
 	startedAt     int64
+}
+
+type Receipt struct {
+	Uuid     string
+	Request  string
+	Response string
 }
 
 // HTTPOutputConfig struct for holding http output configuration
@@ -60,6 +67,7 @@ type HTTPOutput struct {
 	stopWorker    chan struct{}
 	queue         chan *Message
 	responses     chan *response
+	receipts      chan *Receipt
 	stop          chan bool // Channel used only to indicate goroutine should shutdown
 }
 
@@ -112,6 +120,8 @@ func NewHTTPOutput(address string, config *HTTPOutputConfig) PluginReadWriter {
 	o.queue = make(chan *Message, o.config.QueueLen)
 	if o.config.TrackResponses {
 		o.responses = make(chan *response, o.config.QueueLen)
+		o.receipts = make(chan *Receipt, o.config.QueueLen)
+		go stdout(o.receipts)
 	}
 	// it should not be buffered to avoid races
 	o.stopWorker = make(chan struct{})
@@ -217,8 +227,9 @@ func (o *HTTPOutput) sendRequest(client *HTTPClient, msg *Message) {
 	}
 
 	uuid := payloadID(msg.Meta)
+	source := msg.Data
 	start := time.Now()
-	resp, err := client.Send(msg.Data)
+	resp, err := client.Send(source)
 	stop := time.Now()
 
 	if err != nil {
@@ -231,6 +242,7 @@ func (o *HTTPOutput) sendRequest(client *HTTPClient, msg *Message) {
 
 	if o.config.TrackResponses {
 		o.responses <- &response{resp, uuid, start.UnixNano(), stop.UnixNano() - start.UnixNano()}
+		o.receipts <- &Receipt{Uuid: string(uuid), Request: string(source), Response: string(resp)}
 	}
 
 	if o.elasticSearch != nil {
@@ -324,4 +336,14 @@ func (c *HTTPClient) Send(data []byte) ([]byte, error) {
 	}
 	_ = resp.Body.Close()
 	return nil, nil
+}
+
+func stdout(c chan *Receipt) {
+	for {
+		r := <-c
+		jsonBytes, err := json.Marshal(r)
+		if err == nil {
+			fmt.Println(string(jsonBytes))
+		}
+	}
 }
