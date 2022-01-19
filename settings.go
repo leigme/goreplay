@@ -72,6 +72,8 @@ type AppSettings struct {
 	InputKafkaConfig  InputKafkaConfig
 	OutputKafkaConfig OutputKafkaConfig
 	KafkaTLSConfig    KafkaTLSConfig
+
+	OutputRocketMqConfig OutputRocketMqConfig
 }
 
 // Settings holds Gor configuration
@@ -193,6 +195,13 @@ func init() {
 	flag.StringVar(&Settings.KafkaTLSConfig.CACert, "kafka-tls-ca-cert", "", "CA certificate for Kafka TLS Config:\n\tgor  --input-raw :3000 --output-kafka-host '192.168.0.1:9092' --output-kafka-topic 'topic' --kafka-tls-ca-cert cacert.cer.pem --kafka-tls-client-cert client.cer.pem --kafka-tls-client-key client.key.pem")
 	flag.StringVar(&Settings.KafkaTLSConfig.ClientCert, "kafka-tls-client-cert", "", "Client certificate for Kafka TLS Config (mandatory with to kafka-tls-ca-cert and kafka-tls-client-key)")
 	flag.StringVar(&Settings.KafkaTLSConfig.ClientKey, "kafka-tls-client-key", "", "Client Key for Kafka TLS Config (mandatory with to kafka-tls-client-cert and kafka-tls-client-key)")
+
+	flag.StringVar(&Settings.OutputRocketMqConfig.RecordId, "output-rocketmq-record-id", "", "Send request and response stats to Kafka:\n\tgor --output-stdout --input-kafka-host '192.168.0.1:9092,192.168.0.2:9092'")
+	flag.StringVar(&Settings.OutputRocketMqConfig.NodeIp, "output-rocketmq-node-ip", "", "Send request and response stats to Kafka:\n\tgor --output-stdout --input-kafka-host '192.168.0.1:9092,192.168.0.2:9092'")
+	flag.StringVar(&Settings.OutputRocketMqConfig.Host, "output-rocketmq-host", "", "Send request and response stats to Kafka:\n\tgor --output-stdout --input-kafka-host '192.168.0.1:9092,192.168.0.2:9092'")
+	flag.StringVar(&Settings.OutputRocketMqConfig.Group, "output-rocketmq-group", "", "Send request and response stats to Kafka:\n\tgor --output-stdout --input-kafka-topic 'kafka-log'")
+	flag.StringVar(&Settings.OutputRocketMqConfig.Topic, "output-rocketmq-topic", "", "Send request and response stats to Kafka:\n\tgor --output-stdout --input-kafka-topic 'kafka-log'")
+	flag.IntVar(&Settings.OutputRocketMqConfig.Retry, "output-rocketmq-retry", 2, "If turned on, it will assume that messages coming in JSON format rather than  GoReplay text format.")
 
 	flag.Var(&Settings.ModifierConfig.Headers, "http-set-header", "Inject additional headers to http request:\n\tgor --input-raw :8080 --output-http staging.com --http-set-header 'User-Agent: Gor'")
 	flag.Var(&Settings.ModifierConfig.HeaderRewrite, "http-rewrite-header", "Rewrite the request header based on a mapping:\n\tgor --input-raw :8080 --output-http staging.com --http-rewrite-header Host: (.*).example.com,$1.beta.example.com")

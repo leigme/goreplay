@@ -84,6 +84,7 @@ func (i *RAWInput) PluginRead() (*Message, error) {
 	case <-i.quit:
 		return nil, ErrorStopped
 	case msgTCP = <-i.listener.Messages():
+		msg.Type = []byte(msgTCP.Type)
 		msg.Data = msgTCP.Data()
 	}
 

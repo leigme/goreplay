@@ -60,6 +60,7 @@ type Stats struct {
 	TimedOut  bool // timeout before getting the whole message
 	Truncated bool // last packet truncated due to max message size
 	IPversion byte
+	Type      []byte
 }
 
 // Message is the representation of a tcp message

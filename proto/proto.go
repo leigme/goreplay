@@ -28,14 +28,18 @@ import (
 	"github.com/buger/goreplay/byteutils"
 )
 
-// CRLF In HTTP newline defined by 2 bytes (for both windows and *nix support)
-var CRLF = []byte("\r\n")
-
-// EmptyLine acts as separator: end of Headers or Body (in some cases)
-var EmptyLine = []byte("\r\n\r\n")
-
-// HeaderDelim Separator for Header line. Header looks like: `HeaderName: value`
-var HeaderDelim = []byte(": ")
+var (
+	// CRLF In HTTP newline defined by 2 bytes (for both windows and *nix support)
+	CRLF = []byte("\r\n")
+	// EmptyLine acts as separator: end of Headers or Body (in some cases)
+	EmptyLine = []byte("\r\n\r\n")
+	// HeaderDelim Separator for Header line. Header looks like: `HeaderName: value`
+	HeaderDelim = []byte(": ")
+	// EsaHeader ...
+	EsaHeader = []byte{0xda, 0xbb}
+	// EsbHeader ...
+	EsbHeader = []byte{0xad, 0xad}
+)
 
 // MIMEHeadersEndPos finds end of the Headers section, which should end with empty line.
 func MIMEHeadersEndPos(payload []byte) int {
@@ -343,6 +347,13 @@ const (
 	VersionLen = 8
 )
 
+func HasTcpResponseTitle(payload []byte) bool {
+	if bytes.Contains(payload, EsaHeader) {
+		return true
+	}
+	return HasResponseTitle(payload)
+}
+
 // HasResponseTitle reports whether this payload has an HTTP/1 response title
 func HasResponseTitle(payload []byte) bool {
 	s := byteutils.SliceToString(payload)
@@ -401,6 +412,13 @@ func HasRequestTitle(payload []byte) bool {
 	}
 	major, minor, ok := http.ParseHTTPVersion(s[path+len(method)+2 : titleLen])
 	return ok && major == 1 && (minor == 0 || minor == 1)
+}
+
+func HasTcpRequestTitle(payload []byte) bool {
+	if bytes.Contains(payload, EsaHeader) {
+		return true
+	}
+	return HasRequestTitle(payload)
 }
 
 // HasTitle reports if this payload has an http/1 title

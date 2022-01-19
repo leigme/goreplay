@@ -7,6 +7,7 @@ import (
 
 // Message represents data across plugins
 type Message struct {
+	Type []byte
 	Meta []byte // metadata
 	Data []byte // actual data
 }
@@ -54,7 +55,7 @@ func (plugins *InOutPlugins) registerPlugin(constructor interface{}, options ...
 	vc := reflect.ValueOf(constructor)
 
 	// Pre-processing options to make it work with reflect
-	vo := []reflect.Value{}
+	var vo []reflect.Value
 	for _, oi := range options {
 		vo = append(vo, reflect.ValueOf(oi))
 	}
@@ -156,6 +157,10 @@ func NewPlugins() *InOutPlugins {
 
 	if Settings.InputKafkaConfig.Host != "" && Settings.InputKafkaConfig.Topic != "" {
 		plugins.registerPlugin(NewKafkaInput, "", &Settings.InputKafkaConfig, &Settings.KafkaTLSConfig)
+	}
+
+	if Settings.OutputRocketMqConfig.Host != "" && Settings.OutputRocketMqConfig.Group != "" && Settings.OutputRocketMqConfig.Topic != "" {
+		plugins.registerPlugin(NewRocketMqOutput, "", &Settings.OutputRocketMqConfig)
 	}
 
 	return plugins
