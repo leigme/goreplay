@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Shopify/sarama v1.26.4
+	github.com/apache/rocketmq-client-go/v2 v2.1.0 // indirect
 	github.com/araddon/gou v0.0.0-20190110011759-c797efecbb61 // indirect
 	github.com/aws/aws-sdk-go v1.33.2
 	github.com/bitly/go-hostpool v0.1.0 // indirect

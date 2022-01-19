@@ -1,6 +1,7 @@
 package capture
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"expvar"
@@ -340,6 +341,35 @@ func (l *Listener) SocketHandle(ifi pcap.Interface) (handle Socket, err error) {
 	return
 }
 
+func tcpStartHint(pckt *tcp.Packet) (isRequest, isResponse bool) {
+	if proto.HasTcpRequestTitle(pckt.Payload) {
+		return true, false
+	}
+
+	if proto.HasTcpResponseTitle(pckt.Payload) {
+		return false, true
+	}
+
+	// No request or response detected
+	return false, false
+}
+
+func tcpEndHint(m *tcp.Message) bool {
+	if m.MissingChunk() {
+		return false
+	}
+	data := m.Packets()[0].Payload
+	if bytes.Contains(data, proto.EsaHeader) {
+		m.Type = []byte("esa")
+	} else if bytes.Contains(data, proto.EsbHeader) {
+		m.Type = []byte("esb")
+	} else {
+		m.Type = []byte("http")
+	}
+	req, res := tcpStartHint(m.Packets()[0])
+	return proto.HasFullPayload(m, m.PacketData()...) && (req || res)
+}
+
 func http1StartHint(pckt *tcp.Packet) (isRequest, isResponse bool) {
 	if proto.HasRequestTitle(pckt.Payload) {
 		return true, false
@@ -357,7 +387,7 @@ func http1EndHint(m *tcp.Message) bool {
 	if m.MissingChunk() {
 		return false
 	}
-	
+
 	req, res := http1StartHint(m.Packets()[0])
 	return proto.HasFullPayload(m, m.PacketData()...) && (req || res)
 }
@@ -384,6 +414,11 @@ func (l *Listener) read() {
 			}
 
 			messageParser := tcp.NewMessageParser(l.messages, l.ports, hndl.ips, l.expiry, l.allowIncomplete)
+
+			if l.protocol == tcp.ProtocolBinary {
+				messageParser.Start = tcpStartHint
+				messageParser.End = tcpEndHint
+			}
 
 			if l.protocol == tcp.ProtocolHTTP {
 				messageParser.Start = http1StartHint

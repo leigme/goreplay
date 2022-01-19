@@ -70,9 +70,8 @@ type Packet struct {
 	Timestamp          time.Time
 	Payload            []byte
 	buf                []byte
-
-	created time.Time
-	gc      bool
+	created            time.Time
+	gc                 bool
 }
 
 type PcapPacket struct {
